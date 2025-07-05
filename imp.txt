@@ -1,0 +1,9 @@
+ npx mcp-remote https://mcp.fi.money:8080/mcp/stream
+ npx clear-npx-cache  (if necessary and run again)
+
+
+
+
+
+npx mcp-remote https://mcp.fi.money:8080/mcp/stream>mcp_snapshot.json
+

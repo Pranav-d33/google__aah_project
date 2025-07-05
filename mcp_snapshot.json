@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "bank_balance": 520000,
+    "mutual_funds": [
+      {
+        "name": "Axis Bluechip",
+        "current_value": 150000,
+        "returns": 11.2
+      },
+      {
+        "name": "ICICI Value Discovery",
+        "current_value": 95000,
+        "returns": 6.4
+      }
+    ],
+    "epf": 120000
+  },
+  "liabilities": {
+    "home_loan": 1800000,
+    "car_loan": 200000
+  },
+  "income": {
+    "monthly_salary": 75000
+  },
+  "credit_score": 765,
+  "net_worth_history": [
+    {
+      "month": "2024-01",
+      "value": 540000
+    },
+    {
+      "month": "2024-06",
+      "value": 670000
+    },
+    {
+      "month": "2025-06",
+      "value": 810000
+    }
+  ]
+}
