@@ -68,3 +68,29 @@ class AnomalyDetectionTool(BaseTool):
 
        except Exception as e:
         return AnomalyDetectionOutput(anomalies=f"❌ Error in anomaly detection: {str(e)}")
+       
+from langchain_core.tools import tool
+from typing import List
+import json
+from .mcp_loader import load_mcp_snapshot
+import numpy as np
+
+@tool
+def detect_anomaly(_: str = "") -> str:
+    """
+    Detects anomalies in expenses using data from mcp_snapshot.json.
+    """
+    data = load_mcp_snapshot()
+    if data is None:
+        return "❌ The 'mcp_snapshot.json' file is missing."
+    expenses = [m["expenses"] for m in data.get("expense_history", [])]
+    if not expenses:
+        return "No expense history found."
+    mean = np.mean(expenses)
+    std = np.std(expenses)
+    threshold = mean + 2 * std
+    anomalies = [e for e in expenses if e > threshold]
+    if anomalies:
+        return f"Anomalies detected: {anomalies}. Mean: {mean:.2f}, Threshold: {threshold:.2f}"
+    else:
+        return "No anomalies detected in your expenses."

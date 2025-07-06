@@ -40,3 +40,30 @@ class FiMCPRealtimeTool(BaseTool):
 
         except Exception as e:
             return FiMCPRealtimeOutput(status=f"❌ Error fetching snapshot: {str(e)}")
+from langchain_core.tools import tool
+import random
+
+import json
+
+from .mcp_loader import load_mcp_snapshot
+
+@tool
+def get_fi_mcp_realtime(_: str = "") -> str:
+    """
+    Returns a summary of assets from mcp_snapshot.json.
+    """
+    data = load_mcp_snapshot()
+    if data is None:
+        return "❌ The 'mcp_snapshot.json' file is missing."
+    assets = data.get("assets", {})
+    summary = []
+    for k, v in assets.items():
+        if isinstance(v, (int, float)):
+            summary.append(f"{k.replace('_', ' ').title()}: ₹{v:,}")
+        elif isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict):
+                    name = item.get("name") or item.get("symbol") or item.get("bank") or "Unknown"
+                    val = item.get("current_value") or item.get("amount") or 0
+                    summary.append(f"{name}: ₹{val:,}")
+    return "Your asset summary:\n" + "\n".join(summary)

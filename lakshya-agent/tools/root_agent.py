@@ -1,50 +1,76 @@
-from google.adk.agents import Agent
-from google.adk.models import Gemini
-from .fetch_financial_data import FetchFinancialDataTool
-from .sip_performance import SIPPerformanceTool
-from .loan_eligibility import LoanEligibilityTool
-from .net_worth_trend import NetWorthTrendTool
-from .anomaly_detection import AnomalyDetectionTool
-from .fi_mcp_realtime import FiMCPRealtimeTool
-from google.adk.runners import Runner
-#from google.adk.memory import InMemoryMemoryService
-from google.adk.memory import VertexAiRagMemoryService
+import os
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain_core.prompts import PromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-memory = VertexAiRagMemoryService(
-    rag_corpus="projects/YOUR_PROJECT_ID/locations/REGION/ragCorpora/lakshya",
-    similarity_top_k=5,
-    vector_distance_threshold=0.7
+
+from .loan_eligibility import check_loan_eligibility
+from .sip_performance import get_sip_performance
+from .net_worth_trend import get_net_worth_trend
+from .fi_mcp_realtime import get_fi_mcp_realtime
+from .anomaly_detection import detect_anomaly
+from .fetch_financial_data import fetch_financial_data
+from dotenv import load_dotenv
+load_dotenv()
+
+
+tools = [
+    check_loan_eligibility,
+    get_sip_performance,
+    get_net_worth_trend,
+    get_fi_mcp_realtime,
+    detect_anomaly,
+    fetch_financial_data,
+]
+
+# --- Agent Prompt Template ---
+template = """
+Answer the following questions as best you can. You have access to the following tools:
+
+{tools}
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+Begin!
+
+Question: {input}
+Thought:{agent_scratchpad}
+"""
+prompt = PromptTemplate.from_template(template)
+
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash",
+    google_api_key=os.environ["GOOGLE_API_KEY"]
 )
 
-root_agent = Agent(
-    name="lakshya_agent",
-    description="A personal finance agent that analyzes data and offers intelligent financial guidance.",
-    instruction=(
-        """You are Lakshya, a helpful and reliable AI finance co-pilot that gives personalized answers using the user's real financial data.
+agent = create_react_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-  You have access to tools that fetch user data, analyze SIPs, detect anomalies, assess loan eligibility, and check net worth trends. Whenever possible, prefer using these tools rather than guessing or answering generically.
+# --- Main Agent Invocation Function ---
+def invoke_agent(user_query: str):
+    """
+    Invokes the financial agent with a user query.
+    """
+    try:
+        response = agent_executor.invoke({"input": user_query})
+        return response.get("output", "I couldn't find an answer.")
+    except Exception as e:
+        return f"An error occurred while processing your request: {e}"
 
-  If a user asks something like:
-  - “Can I afford a ₹50L loan?”
-  - “How are my SIPs doing?”
-  - “What changed in my net worth?”
-  - “Any red flags in my finances?”
-
-  → You MUST use tools to generate accurate, data-driven insights.
-
-  You can also retrieve past tool outputs using memory to improve continuity. Mention prior decisions or summaries if relevant.
-
-  Avoid giving disclaimers like “I’m just an AI.” Focus on being useful, confident, and grounded in real user data."""
-    ),
-    model=Gemini(model_name="gemini-2.0-flash"),
-    tools=[
-        FetchFinancialDataTool(),
-        SIPPerformanceTool(),
-        LoanEligibilityTool(),
-        NetWorthTrendTool(),
-        AnomalyDetectionTool(),
-        FiMCPRealtimeTool()
-        # Add more tools here as you implement them
-    ],
-     
-)
+# You can add a simple test here to run this file directly
+if __name__ == '__main__':
+    test_query = "Am I eligible for a loan with an income of 50000 and a credit score of 750?"
+    print(f"Testing agent with query: '{test_query}'")
+    result = invoke_agent(test_query)
+    print("Agent Response:")
+    print(result)

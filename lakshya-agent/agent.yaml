@@ -27,6 +27,6 @@ model: gemini-2.0-flash
 runner:
   memory:
     type: vertex_rag
-    rag_corpus: "projects/YOUR_PROJECT_ID/locations/us-central1/ragCorpora/lakshya-memory"
+    rag_corpus="projects/strategic-arc-463702-a3/locations/us-central1/ragCorpora/lakshya",
     similarity_top_k: 5
     vector_distance_threshold: 0.7

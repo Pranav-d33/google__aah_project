@@ -1,8 +1,14 @@
-google-generativeai[adk]
 python-dotenv
 google-adk
 tools
 google-generativeai
-adk
 pandas
 google-adk[memory]
+pytest
+streamlit
+pandas
+matplotlib
+plotly
+langchain
+langchain-core
+langchain-google-genai

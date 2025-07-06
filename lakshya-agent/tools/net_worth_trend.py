@@ -53,3 +53,25 @@ class NetWorthTrendTool(BaseTool):
 
         except Exception as e:
             return NetWorthTrendOutput(trend_summary=f"❌ Error analyzing net worth trend: {str(e)}")
+from langchain_core.tools import tool
+import json
+
+from .mcp_loader import load_mcp_snapshot
+
+@tool
+def get_net_worth_trend(_: str = "") -> str:
+    """
+    Summarizes net worth trend using data from mcp_snapshot.json.
+    """
+    data = load_mcp_snapshot()
+    if data is None:
+        return "❌ The 'mcp_snapshot.json' file is missing."
+    history = data.get("net_worth_history", [])
+    if not history:
+        return "No net worth history found."
+    start = history[0]
+    end = history[-1]
+    change = end["value"] - start["value"]
+    pct = (change / start["value"]) * 100 if start["value"] else 0
+    return (f"Net worth grew from ₹{start['value']:,} to ₹{end['value']:,} "
+            f"({pct:.2f}% change) between {start['month']} and {end['month']}.")

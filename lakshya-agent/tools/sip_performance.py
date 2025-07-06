@@ -50,3 +50,35 @@ class SIPPerformanceTool(BaseTool):
 
         except Exception as e:
             return SIPPerformanceOutput(summary=f"❌ Error analyzing SIPs: {str(e)}")
+from langchain_core.tools import tool
+from typing import Union
+
+from langchain_core.tools import tool
+import re
+import json
+
+from .mcp_loader import load_mcp_snapshot
+
+@tool
+def get_sip_performance(_: str = "") -> str:
+    """
+    Calculates SIP performance using data from mcp_snapshot.json.
+    """
+    data = load_mcp_snapshot()
+    if data is None:
+        return "❌ The 'mcp_snapshot.json' file is missing."
+    sips = data.get("contributions", {}).get("monthly_sip", {})
+    mutual_funds = data.get("assets", {}).get("mutual_funds", [])
+    if not sips or not mutual_funds:
+        return "No SIP data found in your financial snapshot."
+    results = []
+    for mf in mutual_funds:
+        name = mf["name"]
+        monthly = sips.get(name, 0)
+        years = 5
+        rate = mf.get("returns", 10)
+        i = (rate / 100) / 12
+        n = years * 12
+        future_value = monthly * (((1 + i)**n - 1) / i) * (1 + i)
+        results.append(f"{name}: Invested ₹{monthly*n:,}, Value after {years} years: ₹{future_value:,.0f} (at {rate}% p.a.)")
+    return "\n".join(results)

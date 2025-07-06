@@ -2,14 +2,11 @@ from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 from pydantic import BaseModel
 from typing import Dict
-import math
 import os
 import json
 
-from tools.memory_utils import store_tool_output  # ✅ helper to log to memory
-
 class LoanEligibilityInput(BaseModel):
-    financial_data: Dict = {}  # filled via fetch_financial_data tool or mock
+    financial_data: Dict  # must be provided from MCP snapshot
     loan_amount: float = 5000000  # ₹50L default
     interest_rate: float = 8.0
     tenure_years: int = 20
@@ -20,7 +17,7 @@ class LoanEligibilityOutput(BaseModel):
 def calculate_emi(principal, rate, years):
     monthly_rate = rate / (12 * 100)
     months = years * 12
-    emi = (principal * monthly_rate * math.pow(1 + monthly_rate, months)) / (math.pow(1 + monthly_rate, months) - 1)
+    emi = (principal * monthly_rate * (1 + monthly_rate) ** months) / (((1 + monthly_rate) ** months) - 1)
     return emi
 
 class LoanEligibilityTool(BaseTool):
@@ -35,51 +32,38 @@ class LoanEligibilityTool(BaseTool):
             data = input.financial_data
 
             if not data:
-                # 🔁 fallback to MCP snapshot if data not injected
-                snapshot_path = os.getenv("MCP_SNAPSHOT_PATH", "mcp_snapshot.json")
-                if os.path.exists(snapshot_path):
-                    with open(snapshot_path, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                    context.logger.info("Loaded financial data from snapshot.")
-                else:
-                    data = {
-                        "income": {"monthly_salary": 75000},
-                        "liabilities": {"car_loan": 200000},
-                        "credit_score": 765,
-                        "assets": {"bank_balance": 520000},
-                    }
-                    context.logger.warning("No MCP snapshot found. Using mock data.")
+                # No snapshot data available
+                msg = "❌ Financial data snapshot not found. Please fetch your data via Fi MCP first."
+                return LoanEligibilityOutput(result=msg)
 
+            # Extract financial fields
             income = data.get("income", {})
             liabilities = data.get("liabilities", {})
             monthly_salary = income.get("monthly_salary", 0)
 
             if monthly_salary == 0:
                 result = "❌ Monthly salary not found in financial data."
-                store_tool_output(
-                    context,
-                    tool_name="loan_eligibility",
-                    summary=result,
-                    metadata={"error": "no_salary_data"}
-                )
                 return LoanEligibilityOutput(result=result)
 
+            # Calculate EMIs
             max_affordable_emi = monthly_salary * 0.35
             emi = calculate_emi(input.loan_amount, input.interest_rate, input.tenure_years)
 
+            # Sum existing EMIs from liabilities
             existing_emi = 0
-            for _, amount in liabilities.items():
-                existing_emi += calculate_emi(amount, 8.0, 5)
+            for amount in liabilities.values():
+                existing_emi += calculate_emi(amount, input.interest_rate, input.tenure_years)
 
             total_emi = existing_emi + emi
 
+            # Determine eligibility
             if total_emi > max_affordable_emi:
                 result = (
                     f"⚠️ You may not be eligible for a ₹{input.loan_amount:,.0f} loan.\n"
                     f"- Requested EMI: ₹{emi:,.0f}\n"
                     f"- Existing EMIs: ₹{existing_emi:,.0f}\n"
                     f"- Affordable limit: ₹{max_affordable_emi:,.0f}\n"
-                    f"💡 Consider reducing the loan amount or increasing tenure."
+                    "💡 Consider reducing the loan amount or increasing tenure."
                 )
             else:
                 result = (
@@ -89,38 +73,19 @@ class LoanEligibilityTool(BaseTool):
                     f"- Affordable limit: ₹{max_affordable_emi:,.0f}"
                 )
 
-            store_tool_output(
-                context,
-                tool_name="loan_eligibility",
-                summary=result,
-                metadata={
-                    "loan_amount": input.loan_amount,
-                    "interest_rate": input.interest_rate,
-                    "tenure_years": input.tenure_years,
-                    "total_emi": total_emi,
-                    "affordable": total_emi <= max_affordable_emi
-                }
-            )
-
             return LoanEligibilityOutput(result=result)
 
         except Exception as e:
-            return LoanEligibilityOutput(result=f"❌ Error: {str(e)}")
+            return LoanEligibilityOutput(result=f"❌ Error evaluating loan eligibility: {str(e)}")
 
     def default_input(self, context: ToolContext) -> LoanEligibilityInput:
+        # Always require real MCP snapshot; no mocks
         snapshot_path = os.getenv("MCP_SNAPSHOT_PATH", "mcp_snapshot.json")
-        try:
-            with open(snapshot_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                context.logger.info("Loaded financial data from snapshot for default_input.")
-        except Exception:
-            context.logger.warning("Using fallback mock data in default_input().")
-            data = {
-                "income": {"monthly_salary": 75000},
-                "liabilities": {"home_loan": 1800000, "car_loan": 200000},
-                "credit_score": 765,
-                "assets": {"bank_balance": 520000},
-            }
+        if not os.path.exists(snapshot_path):
+            raise FileNotFoundError("MCP snapshot file not found. Please run the Fi MCP fetch tool first.")
+
+        with open(snapshot_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
 
         return LoanEligibilityInput(
             financial_data=data,
@@ -128,3 +93,33 @@ class LoanEligibilityTool(BaseTool):
             interest_rate=8.0,
             tenure_years=20
         )
+from langchain_core.tools import tool
+import re
+
+from .mcp_loader import load_mcp_snapshot
+
+@tool
+def check_loan_eligibility(_: str = "") -> str:
+    """
+    Checks if a user is eligible for a loan based on their financial data in mcp_snapshot.json.
+    """
+    data = load_mcp_snapshot()
+    if data is None:
+        return "❌ The 'mcp_snapshot.json' file is missing."
+    income = data.get("income", {})
+    credit_score = data.get("credit_score", 750)
+    annual_income = income.get("monthly_salary", 0) * 12
+
+    if annual_income == 0:
+        return "❌ Annual income not found in your financial data."
+    if credit_score < 600:
+        return "Loan application is likely to be rejected due to a low credit score."
+    elif 600 <= credit_score < 700:
+        max_loan = annual_income * 2
+        return f"You are likely eligible for a loan up to approximately ₹{max_loan:,.0f}."
+    elif 700 <= credit_score < 800:
+        max_loan = annual_income * 4
+        return f"You have a good chance of being approved for a loan up to approximately ₹{max_loan:,.0f}."
+    else:
+        max_loan = annual_income * 6
+        return f"With your excellent credit score, you are eligible for a premium loan up to approximately ₹{max_loan:,.0f}."

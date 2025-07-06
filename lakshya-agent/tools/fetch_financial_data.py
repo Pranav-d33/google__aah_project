@@ -43,4 +43,17 @@ class FetchFinancialDataTool(BaseTool):
         except Exception as e:
             return FetchFinancialDataOutput(financial_data={"error": str(e)})
         
-        
+from langchain_core.tools import tool
+
+import json
+from .mcp_loader import load_mcp_snapshot
+
+@tool
+def fetch_financial_data(_: str = "") -> str:
+    """
+    Fetches all financial data from mcp_snapshot.json.
+    """
+    data = load_mcp_snapshot()
+    if data is None:
+        return "❌ The 'mcp_snapshot.json' file is missing."
+    return f"Financial snapshot loaded. Top-level keys: {', '.join(data.keys())}"
