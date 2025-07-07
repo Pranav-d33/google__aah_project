@@ -1,40 +1,83 @@
 {
+  "user_profile": {
+    "date_of_birth": "2004-04-05",
+    "age": 21,
+    "risk_profile": "moderate",
+    "retirement_age": 60
+  },
   "assets": {
-    "bank_balance": 520000,
+    "bank_balance": 650000,
     "mutual_funds": [
-      {
-        "name": "Axis Bluechip",
-        "current_value": 150000,
-        "returns": 11.2
-      },
-      {
-        "name": "ICICI Value Discovery",
-        "current_value": 95000,
-        "returns": 6.4
-      }
+      {"name": "Axis Bluechip", "current_value": 180000, "returns": 12.0},
+      {"name": "ICICI Value Discovery", "current_value": 100000, "returns": 7.5}
     ],
-    "epf": 120000
+    "stocks": [
+      {"symbol": "TCS", "current_value": 120000, "returns": 9.2},
+      {"symbol": "RELIANCE", "current_value": 90000, "returns": 8.5}
+    ],
+    "epf": 125000,
+    "fixed_deposits": [
+      {"bank": "SBI", "amount": 200000, "maturity_date": "2026-06-15", "interest_rate": 6.5}
+    ],
+    "real_estate": 2500000
   },
   "liabilities": {
-    "home_loan": 1800000,
-    "car_loan": 200000
+    "home_loan": 1750000,
+    "car_loan": 200000,
+    "personal_loan": 50000,
+    "credit_card_dues": 15000
   },
   "income": {
-    "monthly_salary": 75000
+    "monthly_salary": 80000,
+    "rental_income": 20000,
+    "other_income": 5000
   },
-  "credit_score": 765,
+  "expense_history": [
+    {"month": "2024-12", "expenses": 45000},
+    {"month": "2025-01", "expenses": 50000},
+    {"month": "2025-02", "expenses": 47000},
+    {"month": "2025-03", "expenses": 52000},
+    {"month": "2025-04", "expenses": 48000},
+    {"month": "2025-05", "expenses": 53000},
+    {"month": "2025-06", "expenses": 49000}
+  ],
   "net_worth_history": [
-    {
-      "month": "2024-01",
-      "value": 540000
+    {"month": "2024-12", "value": 720000},
+    {"month": "2025-01", "value": 740000},
+    {"month": "2025-02", "value": 760000},
+    {"month": "2025-03", "value": 780000},
+    {"month": "2025-04", "value": 800000},
+    {"month": "2025-05", "value": 820000},
+    {"month": "2025-06", "value": 840000}
+  ],
+  "contributions": {
+    "monthly_sip": {
+      "Axis Bluechip": 5000,
+      "ICICI Value Discovery": 3000
     },
-    {
-      "month": "2024-06",
-      "value": 670000
-    },
-    {
-      "month": "2025-06",
-      "value": 810000
+    "monthly_savings": 20000
+  },
+  "asset_allocation": {
+    "equity": 45,
+    "debt": 35,
+    "cash": 20
+  },
+  "insurance": {
+    "life_insurance": 1000000,
+    "health_insurance": 500000
+  },
+  "emergency_fund": 150000,
+  "tax_info": {
+    "financial_year": "2024-25",
+    "tax_slab_percent": 30,
+    "deductions": {
+      "80C_limit": 150000,
+      "80C_utilized": 120000
     }
-  ]
+  },
+  "projection_assumptions": {
+    "equity_return_percent": 10,
+    "debt_return_percent": 6,
+    "inflation_rate_percent": 5
+  }
 }

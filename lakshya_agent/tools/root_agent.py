@@ -23,7 +23,6 @@ tools = [
     fetch_financial_data,
 ]
 
-# --- Agent Prompt Template ---
 template = """
 Answer the following questions as best you can. You have access to the following tools:
 
@@ -38,7 +37,9 @@ Action Input: the input to the action
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
-Final Answer: the final answer to the original input question
+Final Answer: the final answer to the original input question, written clearly for the user.
+
+**Always finish with 'Final Answer:' and a clear, concise summary for the user.**
 
 Begin!
 
@@ -54,7 +55,14 @@ llm = ChatGoogleGenerativeAI(
 )
 
 agent = create_react_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+agent_executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    handle_parsing_errors=True,  # <-- Add this line
+    verbose=True,
+    max_iterations=18
+)
 
 # --- Main Agent Invocation Function ---
 def invoke_agent(user_query: str):
