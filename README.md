@@ -294,17 +294,6 @@ pytest lakshya_agent/tests/
 - **Testing**: Minimum 80% test coverage
 - **Security**: Regular security audits
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- **Google Gemini AI**: For powerful language model capabilities
-- **LangChain**: For agent framework and tool integration
-- **Streamlit**: For rapid UI development
-- **Fi MCP**: For financial data integration
-- **Vertex AI**: For advanced memory and RAG capabilities
 
 ## 📞 Support
 
@@ -317,14 +306,10 @@ For support, issues, or feature requests:
 
 *Built with ❤️ for the future of personal finance management*
 
-## 🎨 Screenshots
-
-*Add screenshots of your application here to showcase the UI and functionality*
 
 ## 📊 Demo
 
-*Add links to live demo or video walkthrough here*
-
+https://lakshya-ai.streamlit.app/
 ---
 
 **Happy Financial Planning with Lakshya! 🚀**
